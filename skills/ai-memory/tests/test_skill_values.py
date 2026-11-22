@@ -146,8 +146,9 @@ class Render(unittest.TestCase):
         return f"**Stop.** Set `{key}` in `{self.file}` before you use this skill."
 
     def commit_off(self) -> str:
-        step, without = sv.STEPS["vault.commit"]
-        return f"**Step {step} is off** until `vault.commit` is set in `{self.file}`: {without}"
+        step = sv.STEPS["vault.commit"]
+        return (f"**Step {step['step']} is off** until `vault.commit` is set in "
+                f"`{self.file}`: {step['without']}.")
 
     def test_the_text_keys(self):
         self.assertEqual(sv.TEXT_KEYS, [("user.name", str), ("vault.root", str),
@@ -180,10 +181,10 @@ class Render(unittest.TestCase):
                                                  "- `vault.commit`: vault-commit"])
 
     def test_commit_off_means_uncommitted_never_git_commit(self):
-        step, without = sv.STEPS["vault.commit"]
-        self.assertEqual(step, "Commit")
-        self.assertEqual(without, "leave the note uncommitted and say so; "
-                                  "never commit it with `git commit`.")
+        step = sv.STEPS["vault.commit"]
+        self.assertEqual(step["step"], "Commit")
+        self.assertEqual(step["without"], "leave the note uncommitted and say so; "
+                                          "never commit it with `git commit`")
 
     def test_a_step_key_stops_its_step_only(self):
         self.file.write_text(json.dumps({"user": {"name": "Alice"},
@@ -210,9 +211,6 @@ class Render(unittest.TestCase):
         self.assertEqual(sv.show({"homelab": ["docker", "caddy"]}),
                          '{"homelab":["docker","caddy"]}')
         self.assertEqual(sv.show(["a", "b"]), '["a","b"]')
-
-    def test_a_string_runs_onto_one_line(self):
-        self.assertEqual(sv.show("two\n  lines"), "two lines")
 
     def test_an_unknown_command_is_a_usage_error(self):
         done = subprocess.run([sys.executable, "-B", str(SCRIPT), "paint"],

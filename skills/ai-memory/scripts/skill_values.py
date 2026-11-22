@@ -1,54 +1,62 @@
-#!/usr/bin/env python3
 """The personal values of the ai-memory skill, read from its config file.
 
 The file is the one `AI_MEMORY_CONFIG` names, else
-`${XDG_CONFIG_HOME:-~/.config}/ai-memory/config.json`: one JSON object,
-values only, never a secret.
+`${XDG_CONFIG_HOME:-~/.config}/ai-memory/config.json`: one JSON object whose
+keys nest (`{"user": {"name": "Alice"}}` holds `user.name`), values only,
+never a secret.
 
-    skill_values.py render
+A key that is missing, of another type, an empty string, or an empty object
+or list counts as not set. A file that is missing, empty or not a JSON object
+reads as no values at all. Nothing here raises except `require`, whose
+message is the one sentence a script or hook stops with.
 
-prints the Values block that SKILL.md opens with: `## Values` and one line
-per key of TEXT_KEYS. A key that is not set prints, instead of its line,
-the sentence to stop with, or for a key of STEPS the step that is off and
-how to go on without it, or for a key of OPTIONAL nothing at all. It exits 0 whatever happens, because it runs
-while the skill loads.
+`render` prints the Values block SKILL.md opens with: one line per key of
+TEXT_KEYS, or instead the sentence that says what to set where; for a key of
+STEPS the step that is off and how to go on without it, for a key of OPTIONAL
+nothing at all. It exits 0 whatever the file holds, and an error inside it
+prints a Stop line. Any other argument is a usage error and exits 2.
+`missing` names the keys whose absence prints a Stop line.
 
-A key that is missing, of another type, or an empty string counts as not
-set. A file that is missing, empty or not a JSON object reads as no values
-at all. Nothing here raises except `require`, whose message is the one
-sentence every script and hook stops with.
-
-Stdlib only and no work at import time: hooks import it on every turn.
+The block above the body line is this skill's own; the body below it is the
+same in every skill with values. Stdlib only and no work at import time:
+hooks import it on every turn.
 """
 from __future__ import annotations
 
-import json
-import os
-import sys
-from pathlib import Path
+NAME = "ai-memory"
+VARIABLE = "AI_MEMORY_CONFIG"
 
-# The keys the skill's text uses, in the order the Values block lists them,
-# each with the type it must have.
+# The keys the skill's text uses, each with the type it must have, in the
+# order the Values block shows them. STEPS and OPTIONAL name some of them.
 TEXT_KEYS = [
     ("user.name", str),
     ("vault.root", str),
     ("vault.commit", str),
 ]
 
-# Keys whose absence turns one step off, not the skill:
-# key -> (the step, how to go on without it).
+# Keys whose absence turns off one step, not the skill: the step's name, how
+# to go on without it, and for a key that names an executable, `command`, the
+# name looked up on the PATH when the key is not set.
 STEPS = {
-    "vault.commit": (
-        "Commit",
-        "leave the note uncommitted and say so; never commit it with `git commit`.",
-    ),
+    # Run as `COMMAND MESSAGE PATH...`, naming each file.
+    "vault.commit": {
+        "step": "Commit",
+        "without": "leave the note uncommitted and say so; never commit it with `git commit`",
+    },
 }
 
 # Keys that never stop anything: printed when set, left out when not.
 OPTIONAL = {"user.name"}
 
-ENV = "AI_MEMORY_CONFIG"
-NAME = "ai-memory"
+# ---- body ----
+# Everything below this line is the same in every skill that has values.
+
+import json
+import os
+import shutil
+import sys
+from pathlib import Path
+
 MISSING = "set `{key}` in `{path}`"
 
 
@@ -56,7 +64,7 @@ class Missing(LookupError):
     """A value the skill needs is not set."""
 
     def __init__(self, key: str) -> None:
-        super().__init__(key)
+        super().__init__(MISSING.format(key=key, path=path()))
         self.key = key
 
     def __str__(self) -> str:
@@ -64,7 +72,7 @@ class Missing(LookupError):
 
 
 def path() -> Path:
-    named = os.environ.get(ENV)
+    named = os.environ.get(VARIABLE)
     if named:
         return Path(named)
     config = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
@@ -92,6 +100,8 @@ def get(key: str, kind: type = str, values: dict | None = None):
         return None
     if isinstance(node, str) and not node.strip():
         return None
+    if isinstance(node, (dict, list)) and not node:
+        return None
     return node
 
 
@@ -104,27 +114,51 @@ def require(key: str, kind: type = str, values: dict | None = None):
 
 
 def show(value) -> str:
-    """A value as one line: a string with its white space run together, a
-    list or object as compact JSON."""
-    if isinstance(value, str):
-        return " ".join(value.split())
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    """A value as its Values line shows it: a string trimmed, each further
+    line indented into the list item; a list or object as compact JSON."""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return str(value).strip().replace("\n", "\n  ")
 
 
-def render() -> str:
-    """The Values block, one line per key of TEXT_KEYS."""
-    values = load()
+def command(key: str, values: dict | None = None) -> str | None:
+    """Where the executable that the step key names is, or None. The key
+    holds a path or a name on the PATH; unset, the step's `command` is the
+    name."""
+    named = get(key, str, values) or STEPS[key]["command"]
+    return shutil.which(os.path.expanduser(named.strip()))
+
+
+def current(key: str, kind: type, values: dict) -> object:
+    """What the Values line of `key` shows, or None when it is not set."""
+    if "command" in STEPS.get(key, {}):
+        return command(key, values)
+    return get(key, kind, values)
+
+
+def missing(values: dict | None = None) -> list[str]:
+    """The keys of TEXT_KEYS that are not set and print a Stop line."""
+    values = load() if values is None else values
+    return [key for key, kind in TEXT_KEYS
+            if key not in OPTIONAL and key not in STEPS
+            and get(key, kind, values) is None]
+
+
+def render(values: dict | None = None) -> str:
+    """The Values block: a line per text key, or what to set where."""
+    values = load() if values is None else values
     where = path()
     lines = ["## Values", ""]
     for key, kind in TEXT_KEYS:
-        value = get(key, kind, values)
-        if value is not None:
-            lines.append(f"- `{key}`: {show(value)}")
+        shown = current(key, kind, values)
+        if shown is not None:
+            lines.append(f"- `{key}`: {show(shown)}")
         elif key in OPTIONAL:
             continue
         elif key in STEPS:
-            step, without = STEPS[key]
-            lines.append(f"**Step {step} is off** until `{key}` is set in `{where}`: {without}")
+            step = STEPS[key]
+            lines.append(f"**Step {step['step']} is off** until `{key}` is set in "
+                         f"`{where}`: {step['without']}.")
         else:
             lines.append(f"**Stop.** Set `{key}` in `{where}` before you use this skill.")
     return "\n".join(lines) + "\n"

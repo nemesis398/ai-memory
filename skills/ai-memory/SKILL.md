@@ -15,8 +15,7 @@ description: >-
 
 !`python3 -B "${CLAUDE_SKILL_DIR}/scripts/skill_values.py" render`
 
-The user, below, is the person you work for. When Values lists `user.name`,
-call them by that name.
+When Values lists `user.name`, call the user by that name.
 
 A memory is one fact that a future session needs and cannot find anywhere
 else. It lives as one small note in the vault's `AI/memory/`, and a session
