@@ -39,6 +39,18 @@ class SkillText(unittest.TestCase):
         first = next(line for line in body.splitlines() if line.strip())
         self.assertEqual(first, '!`python3 -B "${CLAUDE_SKILL_DIR}/scripts/skill_values.py" render`')
 
+    def test_the_frontmatter_grants_the_values_and_lint_calls_only(self):
+        # A session that does not allow the render call loads the skill
+        # without its Values block, so the skill grants exactly its own two
+        # commands and nothing wider.
+        front = self.text.split("---", 2)[1]
+        block = re.search(r"^allowed-tools:\n((?:  - .+\n)+)", front, re.M)
+        self.assertIsNotNone(block, "no allowed-tools list in the frontmatter")
+        self.assertEqual(block[1].splitlines(), [
+            '  - Bash(python3 -B "${CLAUDE_SKILL_DIR}/scripts/skill_values.py" render)',
+            '  - Bash(python3 -B "${CLAUDE_SKILL_DIR}/scripts/lint.py":*)',
+        ])
+
     def test_no_placeholder_is_left(self):
         self.assertNotIn("{" * 2, self.text)
 

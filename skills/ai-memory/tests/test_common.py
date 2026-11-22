@@ -140,7 +140,7 @@ class RunTest(unittest.TestCase):
 
     def test_a_missing_state_module_fails_open(self):
         # A copy of the harness whose scripts/ lacks state.py, as a half
-        # synced or mid-edit stow tree can leave it.
+        # synced or mid-edit checkout can leave it.
         skill = self.tmp / "skill"
         (skill / "scripts").mkdir(parents=True)
         (skill / "adapters" / "claude").mkdir(parents=True)

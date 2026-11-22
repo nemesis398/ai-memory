@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -42,7 +43,8 @@ HARD_CAP = 6144
 DESCRIPTION_CAP = 250
 STATUSES = ("active", "superseded")
 
-MDLINT_DEFAULT = "~/.local/share/nvim/mason/bin/markdownlint-cli2"
+# The binary is the one AI_MEMORY_MDLINT names, else this name on the PATH.
+MDLINT_NAME = "markdownlint-cli2"
 MDLINT_TIMEOUT = 120
 FOLDERS = (MEMORY_DIR, SESSIONS_DIR, ARCHIVE_DIR)
 # Globs, never file names: markdownlint-cli2 reads every argument as a glob,
@@ -205,8 +207,12 @@ def markdown_findings(vault: Path) -> list[Finding]:
     """
     if not any((vault / folder).is_dir() for folder in FOLDERS):
         return []
-    binary = str(Path(os.environ.get("AI_MEMORY_MDLINT") or MDLINT_DEFAULT).expanduser())
-    tool = "markdownlint-cli2"
+    tool = MDLINT_NAME
+    named = os.environ.get("AI_MEMORY_MDLINT")
+    binary = str(Path(named).expanduser()) if named else shutil.which(MDLINT_NAME)
+    if binary is None:
+        return [Finding("WARN", tool, f"not on the PATH and AI_MEMORY_MDLINT is not set, "
+                                      f"so the Markdown went unchecked")]
     try:
         done = subprocess.run([binary, *MDLINT_GLOBS], cwd=vault, capture_output=True,
                               text=True, encoding="utf-8", errors="replace",

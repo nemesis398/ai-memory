@@ -1,6 +1,6 @@
 ---
 max_turns: 4
-allowed_tools: [Skill]
+allowed_tools: [Skill, Bash]
 ---
 
 No, stop doing that. When you run the test suite in this repository, never

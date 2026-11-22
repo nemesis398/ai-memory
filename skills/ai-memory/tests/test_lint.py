@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,7 +13,7 @@ sys.path.insert(0, str(SCRIPTS))
 from lint import (  # noqa: E402
     DESCRIPTION_CAP,
     HARD_CAP,
-    MDLINT_DEFAULT,
+    MDLINT_NAME,
     PINNED_BUDGET,
     SOFT_CAP,
     Finding,
@@ -20,6 +21,9 @@ from lint import (  # noqa: E402
     markdown_findings,
 )
 from notes import ARCHIVE_DIR, MEMORY_DIR, SESSIONS_DIR  # noqa: E402
+
+# The binary the lint itself would run, read before any test stubs it.
+REAL_MDLINT = os.environ.get("AI_MEMORY_MDLINT") or shutil.which(MDLINT_NAME)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from helpers import front, text, write_note, write_sized_note  # noqa: E402
@@ -284,6 +288,26 @@ class Markdownlint(LintCase):
         self.assertEqual([f.level for f in findings], ["WARN"])
         self.assertIn("not found", findings[0].message)
 
+    def test_without_the_variable_it_runs_the_one_on_the_path(self):
+        record = self.tmp / "called"
+        bin_dir = self.tmp / "bin"
+        bin_dir.mkdir()
+        self.stub(f'echo "$0" > "{record}"', name=f"bin/{MDLINT_NAME}")
+        with mock.patch.dict(os.environ, {"PATH": str(bin_dir)}):
+            del os.environ["AI_MEMORY_MDLINT"]
+            write_note(self.memory, "x.md", front())
+            self.assertEqual(self.lint(), [])
+        self.assertEqual(Path(record.read_text(encoding="utf-8").strip()), bin_dir / MDLINT_NAME)
+
+    def test_without_the_variable_or_one_on_the_path_it_is_one_warning(self):
+        with mock.patch.dict(os.environ, {"PATH": str(self.tmp / "empty")}):
+            del os.environ["AI_MEMORY_MDLINT"]
+            write_note(self.memory, "x.md", front())
+            findings = self.lint()
+        self.assertEqual([(f.level, f.rel) for f in findings], [("WARN", MDLINT_NAME)])
+        self.assertIn("AI_MEMORY_MDLINT", findings[0].message)
+        self.assertIn("PATH", findings[0].message)
+
     def test_a_markdownlint_that_fails_to_run_is_an_error(self):
         self.use_mdlint(self.stub("echo \"Error: Unable to use configuration file 'x'\" >&2\nexit 2\n"))
         write_note(self.memory, "x.md", front())
@@ -304,9 +328,9 @@ class Markdownlint(LintCase):
         self.memory.rmdir()
         self.assertEqual(self.lint(), [])
 
-    @unittest.skipUnless(Path(MDLINT_DEFAULT).expanduser().exists(), "markdownlint-cli2 is not installed")
+    @unittest.skipUnless(REAL_MDLINT, "markdownlint-cli2 is not installed")
     def test_the_real_markdownlint_reads_the_vault(self):
-        self.use_mdlint(MDLINT_DEFAULT)
+        self.use_mdlint(REAL_MDLINT)
         write_note(self.memory, "bad.md", front(), "No title here.\n")
         write_note(self.memory, "good.md", front(), "# Good\n\nFact.\n")
         write_note(self.sessions, "2026-10-17 Prüfung (x) – y.md", SESSION_FRONT, "# Prüfung (x) – y\n\nDone.\n")

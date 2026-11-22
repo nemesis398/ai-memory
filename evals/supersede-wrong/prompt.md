@@ -1,6 +1,6 @@
 ---
 max_turns: 4
-allowed_tools: [Skill]
+allowed_tools: [Skill, Bash]
 ---
 
 The memory note `AI/memory/caddy-reload-needs-restart.md` says a Caddyfile

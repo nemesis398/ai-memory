@@ -1,6 +1,6 @@
 ---
 max_turns: 4
-allowed_tools: [Skill]
+allowed_tools: [Skill, Bash]
 ---
 
 Save a memory of what we did today: we renamed the backup job, fixed two

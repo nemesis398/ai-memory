@@ -165,7 +165,7 @@ class MatchPrompt(unittest.TestCase):
 
     def test_a_prompt_of_filler_words_matches_nothing(self):
         # N = 320. The twenty notes hold the stopwords of the prompts below
-        # the way the old store's descriptions do, each in 1 to 5 of them, so
+        # the way real descriptions do, each in 1 to 5 of them, so
         # each would score ln(320 / 5) = 4.16 or more and fire alone if it
         # were not a stopword. The inner loop proves it for every one: take
         # a single word out of STOPWORDS and its prompt matches a note.

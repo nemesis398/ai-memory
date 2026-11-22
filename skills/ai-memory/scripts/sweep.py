@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The report the planner's Sunday session proposes promotions and archivals from.
+"""The report that a weekly review with the user starts from.
 
     sweep.py report --since YYYY-MM-DD [--vault PATH]
 
@@ -31,8 +31,8 @@ Review queue
     first, with their injections in those 90 days.
 
 Each candidate, each archive proposal and each queued note ends in a
-default verdict for the planner's proposal. Nothing here decides: the user
-confirms every promotion and every archival in the planner's session.
+default verdict for the review's proposal. Nothing here decides: the user
+confirms every promotion and every archival in the review.
 
 The log is `state.LOG_FILE` in the ai-memory state root. A log line or a note
 that cannot be read is skipped, and one line on stderr counts them; the lint
@@ -390,11 +390,11 @@ def _day(value: str) -> date:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="The Sunday sweep's report for the planner.")
+    parser = argparse.ArgumentParser(description="The weekly review's report: memory candidates, archive proposals, misses.")
     commands = parser.add_subparsers(dest="command", required=True)
     command = commands.add_parser("report", help="print the five sections, write nothing")
     command.add_argument("--since", required=True, type=_day,
-                         help="the first day counted, YYYY-MM-DD (last Sunday)")
+                         help="the first day counted, YYYY-MM-DD (the day of the last review)")
     command.add_argument("--vault", type=Path,
                          help="the vault (default: AI_MEMORY_VAULT, else vault.root in the config file)")
     args = parser.parse_args(argv)

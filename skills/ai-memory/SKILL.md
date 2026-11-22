@@ -9,6 +9,9 @@ description: >-
   `AI/memory/` is written, reviewed, superseded or archived. It holds the four
   tests a memory has to pass, the better homes to try first, and the format
   that the hooks and the lint read.
+allowed-tools:
+  - Bash(python3 -B "${CLAUDE_SKILL_DIR}/scripts/skill_values.py" render)
+  - Bash(python3 -B "${CLAUDE_SKILL_DIR}/scripts/lint.py":*)
 ---
 
 # ai-memory
@@ -66,10 +69,10 @@ note in `AI/`. The lint warns on private IPv4 addresses and on long token-like r
 | What happened, what is next | the session note, or the task tracker |
 | Something that fits none of those | a memory |
 
-**One change against the old rules:** gotchas were 71% of the old store and
-the least read. The gotcha test, defined with the kinds below, stays.
-But a gotcha's home is now the thing it bites (the skill, the runbook, the
-code), and it becomes a memory only when no such home exists.
+**A gotcha lives where it bites.** The gotcha test, defined with the kinds
+below, decides what counts as one, but its home is the thing it bites (the
+skill, the runbook, the code), because that is where the next session meets
+it. It becomes a memory only when no such home exists.
 
 ## When to write
 
@@ -79,10 +82,9 @@ session note's *Memory candidates*, which is searchable but never injected.
 
 **Write when a cost repeats, not when something happens once.** The same error
 signature in two sessions, or more than 20 turns spent on one problem, makes a
-candidate. In the old store the `pkill -f` trap killed the shell in 8 sessions
-before anyone wrote it down, and three other recurring errors never got a
-memory at all. Write the exact symptom string into `description`, in
-backticks, because the failure hook matches on it.
+candidate. A trap nobody writes down costs a session every time it bites
+again. Write the exact symptom string into `description`, in backticks,
+because the failure hook matches on it.
 
 **Nothing writes a memory unattended.** A hook, a subagent, a workflow or a
 headless run never writes one. It reports the candidate to whoever dispatched
@@ -160,7 +162,7 @@ it, so it has to be unique in the whole vault.
 - **`updated` moves only when the claim was re-checked.** It drives the review
   queue.
 
-Write the note in English. Every note in `AI/` passes Neovim's
+Write the note in English. Every note in `AI/` passes
 `markdownlint-cli2` under the vault's `.markdownlint-cli2.jsonc`, and the H1
 right after the frontmatter is what satisfies MD041. Links are bare wikilinks,
 the way `Vault.md` describes them.
@@ -204,31 +206,34 @@ languages' terms where the user mixes languages: **Teilnetzmaske** next to
 
 The plugin registers the three hooks (`hooks/hooks.json`). Without
 `vault.root` in the config file they inject nothing and say on one stderr line
-which key to set in which file, and `Memory.base` is the only reader.
+which key to set in which file, and a note is read only when someone opens
+it in the vault.
 
 ## Record freshness
 
 A memory states the date it was verified and, where it matters, the version it
-was verified on. 158 of the old memories opened with a date, 40 were pinned to
-a version, and 5 were already stale.
+was verified on. A claim about a tool goes stale when the tool changes, and
+the date and the version are what a review re-checks it against.
 
 ## Lifecycle
 
 - **Promote** a candidate on its second occurrence or on request, in a weekly
-  sweep. The sweep is a step in the planner's interactive Sunday session: it
-  proposes promotions and archivals, and the user confirms. Every proposal says
-  whether it is recommended or not recommended, with a one-line reason, and
-  the user confirms each one.
+  review with the user. It starts from the sweep report,
+  `python3 -B "${CLAUDE_SKILL_DIR}/scripts/sweep.py" report --since YYYY-MM-DD`
+  with the day of the last review, which lists the candidates, the archive
+  proposals and the recurring misses and decides nothing. Put each proposal to
+  the user as recommended or not recommended, with a one-line reason, and the
+  user confirms each one.
 - **Log what was injected.** Every hook appends what it injected, and why, to
   `~/.local/state/ai-memory/injections.jsonl`, outside the synced vault. The
-  Sunday sweep reads it to count misses and reuse.
+  sweep report reads it to count misses and reuse.
 - **Supersede in place.** A contradicting fact gets a new note that links the
   old one, and the old note turns `status: superseded` and moves to
   `AI/archive/`. CLAUDE.md beats a memory.
 - **Cap** what one domain can inject. When it's full, a new pinned note has to
   replace one. The lint warns once the pinned lines pass 4000 characters.
-- **Review** through a base: active notes whose `updated` is older than 90
-  days, oldest first. Archive what nobody misses.
+- **Review** the active notes whose `updated` is older than 90 days, oldest
+  first. Archive what nobody misses.
 - **Measure** reuse as "the injected line or the note changed what a session
   did", not as file opens, because retrieval delivers the line without an
   open.
@@ -253,12 +258,11 @@ and why it is wrong.
 ```
 
 A run that writes no session note, such as a subagent, puts that bullet in its
-report. The Sunday sweep lists it under *Archive proposals*, never as a
-candidate, and the planner puts it to the user.
+report. The sweep report lists it under *Archive proposals*, never as a
+candidate, and the weekly review puts it to the user.
 
 Anything else, a supersede or an archival without a successor, is a proposal
-for the planner's Sunday session, and these steps wait until the user has
-confirmed it.
+for the weekly review, and these steps wait until the user has confirmed it.
 
 1. Write the new note, and link the old one from it with a bare wikilink.
 2. In the old note, set `status: superseded`. Leave its `updated` alone,
@@ -278,9 +282,9 @@ in `AI/archive/` is superseded, so none of them shows in the *Active* view.
 
 ### Review a note
 
-`Memory.base` at the vault root has four views: *Active*, *Pinned*, *Review
-queue* and *Superseded*. *Review queue* lists the active notes whose `updated`
-is older than 90 days, oldest first. For each one, re-check the claim against
+The review queue is the active notes whose `updated` is older than 90 days,
+oldest first. The sweep report lists it under *Review queue*, and a vault
+with a `Memory.base` at its root may show it as a view. For each one, re-check the claim against
 the thing it describes. Still true: set `updated` to today and add the version
 if it matters. Wrong or gone: propose to supersede or archive it, with a
 recommendation, and wait for the user.

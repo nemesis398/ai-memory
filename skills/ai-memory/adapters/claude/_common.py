@@ -2,14 +2,15 @@
 """The harness every ai-memory hook adapter runs under.
 
 The hooks run on every prompt and every failed tool call of every Claude Code
-session on this machine, so the one rule is to fail open. Whatever goes
+session that loads the plugin, so the one rule is to fail open. Whatever goes
 wrong, a hook prints nothing, exits 0 and appends the traceback to `hook.log`
-in the state root. A vault that is not configured is not wrong: the hook
-says on one stderr line which key to set in which file, and injects nothing. A note the hook could not read goes there too, one line
-each, so a note that drops out of the hooks leaves a trace. A
-UserPromptSubmit hook that exits 2 blocks the prompt, and one that prints
-anything but a JSON line breaks the turn, so `run` catches BaseException: a
-handler's `sys.exit(2)` is caught too.
+in the state root. A vault that is not configured is not wrong: the hook says
+on one stderr line which key to set in which file, and injects nothing. A
+note the hook could not read goes to `hook.log` too, one line each, so a note
+that drops out of the hooks leaves a trace. A UserPromptSubmit hook that
+exits 2 blocks the prompt, and one that prints anything but a JSON line breaks
+the turn, so `run` catches BaseException: a handler's `sys.exit(2)` is caught
+too.
 
 The scripts are live code, replaced by a switch or edited in a checkout
 while the hooks are registered, so any of them can be missing or

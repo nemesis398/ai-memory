@@ -1,4 +1,4 @@
-"""The Sunday sweep's report: candidates, archive proposals, recurring misses,
+"""The weekly sweep report: candidates, archive proposals, recurring misses,
 use, review queue.
 
 Every test drives `sweep.py report` as a subprocess, with the vault and the

@@ -1,6 +1,6 @@
 ---
 max_turns: 4
-allowed_tools: [Skill]
+allowed_tools: [Skill, Bash]
 ---
 
 Remember this: on my NAS, `smartctl` needs `-d sat` for the USB disks, or it

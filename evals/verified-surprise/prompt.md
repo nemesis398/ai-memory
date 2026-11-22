@@ -1,6 +1,6 @@
 ---
 max_turns: 4
-allowed_tools: [Skill]
+allowed_tools: [Skill, Bash]
 ---
 
 That backup works again, thanks. For the record: you expected

@@ -447,7 +447,7 @@ class EveryAdapterTest(AdapterCase):
         self.assertEqual(root.read_text(encoding="utf-8"), "a file, not a directory\n")
 
     def test_each_adapter_fails_open_without_its_script_modules(self):
-        # The stow tree mid-sync: the adapters are there, scripts/ is empty.
+        # A checkout mid-sync: the adapters are there, scripts/ is empty.
         skill = self.tmp / "skill"
         (skill / "scripts").mkdir(parents=True)
         copied = skill / "adapters" / "claude"

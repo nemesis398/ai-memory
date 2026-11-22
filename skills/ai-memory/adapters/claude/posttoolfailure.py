@@ -7,7 +7,7 @@ them appears in the failed tool call's error, at most MAX_FAILURE_HITS notes
 go out under the failure header, each once per session.
 
 When no note's symptom is in the error, the failure is logged as a `miss`
-and nothing is printed. The Sunday sweep groups the misses by `detail`, the
+and nothing is printed. The sweep report groups the misses by `detail`, the
 tool name and the first telling line of the error with every digit masked,
 so the same failure with another port, line or pid groups as one. A failure
 whose note the session already got is no miss: the memory exists, and the

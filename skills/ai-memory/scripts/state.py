@@ -27,7 +27,7 @@ from pathlib import Path
 
 __all__ = ["LOG_FILE", "REASONS", "forget", "log", "prune", "remember", "seen", "state_root"]
 
-# Why a hook logged a line. The Sunday sweep groups by these.
+# Why a hook logged a line. The sweep report groups by these.
 REASONS = ("pinned", "match", "digest", "failure", "miss")
 # The injection log in the state root, which `log` writes and the sweep reads.
 LOG_FILE = "injections.jsonl"

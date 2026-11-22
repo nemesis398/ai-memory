@@ -1,7 +1,7 @@
 """Read the memory and session notes in the vault's `AI/` area.
 
-The lint, the retrieval hooks, the session notes and the migration all read
-notes through this module, so a note means the same thing to each of them.
+The lint, the retrieval hooks and the sweep all read notes through this
+module, so a note means the same thing to each of them.
 
 The frontmatter reader covers the YAML subset Obsidian writes: top-level
 `key: value`, single and double quotes, `[a, b]` flow lists, `- item` block
@@ -33,7 +33,6 @@ PINNED = "pinned"
 MEMORY_DIR = "AI/memory"
 SESSIONS_DIR = "AI/sessions"
 ARCHIVE_DIR = "AI/archive"
-
 
 
 class FrontmatterError(ValueError):

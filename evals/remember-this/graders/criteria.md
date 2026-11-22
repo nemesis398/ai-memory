@@ -11,4 +11,4 @@ The response:
   `domain` as a list, `updated` and a double-quoted `description`;
 - puts the exact symptom string "Unknown USB bridge" and the fix `-d sat`
   into the `description`;
-- does not save the IP address or any secret.
+- invents no host name, address or secret that the prompt does not give.
