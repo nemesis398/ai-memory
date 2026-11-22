@@ -1,0 +1,16 @@
+{
+  "user": {
+    "name": "Alice"
+  },
+  "vault": {
+    "root": "/home/alice/Notes",
+    "commit": "git-commit-note"
+  },
+  "memory": {
+    "domains": {
+      "homelab": ["docker", "caddy", "proxmox"],
+      "desktop": ["sway", "waybar"],
+      "git": ["git", "commit", "rebase"]
+    }
+  }
+}

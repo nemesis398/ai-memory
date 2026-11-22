@@ -1,0 +1,38 @@
+{
+  "description": "ai-memory: the pinned lines at session start, the notes a prompt points at, and the notes whose symptom a failed tool call shows.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"${CLAUDE_PLUGIN_ROOT}/skills/ai-memory/adapters/claude/sessionstart.py\" || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"${CLAUDE_PLUGIN_ROOT}/skills/ai-memory/adapters/claude/userpromptsubmit.py\" || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"${CLAUDE_PLUGIN_ROOT}/skills/ai-memory/adapters/claude/posttoolfailure.py\" || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

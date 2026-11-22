@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "ai-memory",
+  "version": "0.1.0",
+  "description": "Memory notes for Claude Code in an Obsidian vault: one fact per note, a description injected as one line by three hooks, a lint, and a sweep that proposes what to keep.",
+  "author": {
+    "name": "nemesis398",
+    "url": "https://github.com/nemesis398"
+  },
+  "homepage": "https://github.com/nemesis398/ai-memory",
+  "repository": "https://github.com/nemesis398/ai-memory",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "obsidian",
+    "hooks",
+    "context",
+    "notes"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ai-memory",
+  "owner": {
+    "name": "nemesis398",
+    "url": "https://github.com/nemesis398"
+  },
+  "metadata": {
+    "description": "The ai-memory skill for Claude Code, as a marketplace of one."
+  },
+  "plugins": [
+    {
+      "name": "ai-memory",
+      "source": "./",
+      "description": "Memory notes in an Obsidian vault, one fact per note, injected as one line by three hooks."
+    }
+  ]
+}
