@@ -16,6 +16,10 @@ follow [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - The Values block names the area, and the skill text reads its paths from it.
+- Archiving a note uses `obsidian move` only when the vault root has a
+  `.obsidian/` folder. Without one, the skill moves the note into
+  `AREA/archive/` with `mv -n` and checks the target, because bare wikilinks
+  resolve by filename.
 
 ## [0.1.0] - 2026-11-22
 

@@ -270,14 +270,23 @@ for the weekly review, and these steps wait until the user has confirmed it.
 1. Write the new note, and link the old one from it with a bare wikilink.
 2. In the old note, set `status: superseded`. Leave its `updated` alone,
    because it records when the old claim was last verified.
-3. Move it with Obsidian, which rewrites the links that point at it:
+3. Move it into the archive. Check `test -d "<vault.root>/.obsidian"`. With
+   that folder the vault is an Obsidian vault, so move it with Obsidian, which
+   rewrites the links that point at it:
 
    ```bash
    obsidian move path="AREA/memory/FILENAME.md" to="AREA/archive" < /dev/null
    ```
 
    The CLI exits 0 even when the move fails, so read its stdout for `Error:`.
-   Never `mv`, `rm` or rename a note with shell tools.
+   Without that folder, use a plain move, because a bare wikilink resolves by
+   filename and the filename does not change:
+
+   ```bash
+   mv -n "<vault>/AREA/memory/FILENAME.md" "<vault>/AREA/archive/"
+   ```
+
+   Then run `test -e` on the target. Never `rm` and never rename a note.
 
 A note that nobody misses is archived without a successor, once the user has
 confirmed it: steps 2 and 3, `status: superseded`, then the move. Every note
