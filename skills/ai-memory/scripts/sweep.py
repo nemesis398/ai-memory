@@ -16,7 +16,7 @@ Archive proposals
     `## Memory candidates` in those same session notes: a session found the
     memory wrong and could not ask the user. With the note, the reason and the
     session note it came from. Recommended when the note is active in
-    `AI/memory/`, not recommended when no memory note has that name or it is
+    the memory folder, not recommended when no memory note has that name or it is
     already archived.
 Recurring failures without a memory
     The log's `miss` lines grouped by `detail`, kept when two sessions or more

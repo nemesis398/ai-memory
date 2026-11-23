@@ -73,9 +73,10 @@ The notes sit in `memory/`, `archive/` and `sessions/` under `vault.area`,
 `AI` by default. This section writes `AI/` for that folder. The skill
 expects the vault to provide:
 
-- the Obsidian command line, `obsidian`, with the app running: a superseded
-  note moves to `AI/archive/` with `obsidian move`, because only Obsidian
-  rewrites the links that point at it;
+- only when the vault root has `.obsidian/`: the Obsidian command line,
+  `obsidian`, with the app running. A superseded note moves to `AI/archive/`
+  with `obsidian move`, because only Obsidian rewrites the links that point at
+  it. Without `.obsidian/`, the skill archives with `mv -n`;
 - session notes in `AI/sessions/` with `type: session` in their frontmatter
   and a `## Memory candidates` heading, where a candidate waits for the
   weekly review and where `sweep.py` reads it;

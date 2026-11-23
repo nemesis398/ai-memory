@@ -18,7 +18,10 @@ allowed-tools:
 
 !`python3 -B "${CLAUDE_SKILL_DIR}/scripts/skill_values.py" render`
 
-When Values lists `user.name`, call the user by that name.
+When Values lists `user.name`, call the user by that name. A line that says
+**Stop.** names a value that is not set, and a line such as
+`vault.area: invalid: ...` names one that is wrong: on either, stop and tell the
+user which value to fix in which file.
 
 A memory is one fact that a future session needs and cannot find anywhere
 else. It lives as one small note in the vault's memory folder, and a session
@@ -28,7 +31,7 @@ writing a description in the words a future prompt or error message will
 contain.
 
 The vault is the directory `vault.root` in Values names. Every path below
-written as `AI/...` sits under `vault.area` in Values instead, `AI` by
+written as `AREA/...` sits under `vault.area` in Values instead, `AI` by
 default and `.` for the vault root: its memory, sessions and archive folders
 are `AREA/memory/`, `AREA/sessions/` and `AREA/archive/`. Read its `Vault.md`,
 if it has one, before the first write of a session, because its rules bind these notes too.
@@ -309,7 +312,9 @@ python3 -B "${CLAUDE_SKILL_DIR}/scripts/lint.py"
 
 It prints one `LEVEL rel: message` line per finding and exits 1 on any ERROR,
 and 2 with "set `vault.root` in `PATH`", PATH being the config file, when the
-skill is not set up: then stop and tell the user.
+skill is not set up: then stop and tell the user. The same holds for an exit 2 of lint or sweep
+that names `vault.area`: stop and tell the user which value to fix in which
+file.
 `--vault PATH` points it at another vault, and `--summary` adds counts per
 folder and kind and the pinned characters against their budget. A vault with
 a check of its own (a `vault-check` script, say) can run the same lint, and
