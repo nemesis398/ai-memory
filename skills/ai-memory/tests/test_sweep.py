@@ -19,8 +19,7 @@ from pathlib import Path
 TESTS = Path(__file__).resolve().parent
 SWEEP = TESTS.parent / "scripts" / "sweep.py"
 sys.path.insert(0, str(TESTS))
-from helpers import front, write_note  # noqa: E402
-from notes import ARCHIVE_DIR, MEMORY_DIR, SESSIONS_DIR  # noqa: E402
+from helpers import ARCHIVE_DIR, MEMORY_DIR, SESSIONS_DIR, front, write_note  # noqa: E402
 from subprocess_env import subprocess_env  # noqa: E402
 
 SECTIONS = ("Candidates", "Archive proposals", "Recurring failures without a memory", "Use",

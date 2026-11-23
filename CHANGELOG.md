@@ -4,6 +4,19 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-23
+
+### Added
+
+- `vault.area`, the folder in the vault that holds the memory, session and
+  archive folders. It defaults to `AI`, so a config without it works as
+  before. `""` or `.` puts them at the vault root. An absolute path, `..` or
+  a backslash is an error that names the key.
+
+### Changed
+
+- The Values block names the area, and the skill text reads its paths from it.
+
 ## [0.1.0] - 2026-11-22
 
 ### Added

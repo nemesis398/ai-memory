@@ -23,7 +23,7 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 
-from notes import MEMORY_DIR, PINNED, Note, line
+from notes import PINNED, Note, line, memory_dir
 
 __all__ = [
     "DIGEST_BUDGET", "MATCH_BUDGET", "MAX_FAILURE_HITS", "MAX_MATCHES", "MIN_SCORE",
@@ -164,7 +164,7 @@ def symptoms(description: str) -> list[str]:
 def header(kind: str, vault: Path, domain: str = "") -> str:
     """The line a hook puts above its block: `kind` is pinned, match, digest
     or failure. The memory folder is absolute, with the home directory as ~."""
-    folder = Path(vault).expanduser().absolute() / MEMORY_DIR
+    folder = memory_dir(Path(vault).expanduser().absolute())
     home = Path.home()
     shown = ("~/" + folder.relative_to(home).as_posix() if folder.is_relative_to(home)
              else folder.as_posix())

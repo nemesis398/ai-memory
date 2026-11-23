@@ -1,12 +1,12 @@
 ---
 name: ai-memory
 description: >-
-  Write, supersede and review the memory notes in the vault's `AI/memory/`:
+  Write, supersede and review the memory notes in the vault's memory folder (`AI/memory/` by default):
   one fact per note, flat frontmatter, and a description that retrieval
   injects as one line. Use this when the user says remember this or save a
   memory, when the user corrects or confirms a way of working that is worth
-  keeping, when a verified surprise turns up, and whenever a note in
-  `AI/memory/` is written, reviewed, superseded or archived. It holds the four
+  keeping, when a verified surprise turns up, and whenever a memory
+  note is written, reviewed, superseded or archived. It holds the four
   tests a memory has to pass, the better homes to try first, and the format
   that the hooks and the lint read.
 allowed-tools:
@@ -21,13 +21,16 @@ allowed-tools:
 When Values lists `user.name`, call the user by that name.
 
 A memory is one fact that a future session needs and cannot find anywhere
-else. It lives as one small note in the vault's `AI/memory/`, and a session
+else. It lives as one small note in the vault's memory folder, and a session
 mostly sees only its `description`, injected as a single line. So the work
 sits in two places: deciding whether the fact deserves a note at all, and
 writing a description in the words a future prompt or error message will
 contain.
 
-The vault is the directory `vault.root` in Values names. Read its `Vault.md`,
+The vault is the directory `vault.root` in Values names. Every path below
+written as `AI/...` sits under `vault.area` in Values instead, `AI` by
+default and `.` for the vault root: its memory, sessions and archive folders
+are `AREA/memory/`, `AREA/sessions/` and `AREA/archive/`. Read its `Vault.md`,
 if it has one, before the first write of a session, because its rules bind these notes too.
 
 ## Save a memory only if all four hold
@@ -56,7 +59,7 @@ non-obvious about it and save that.
 - secrets, tokens, internal IPs, and sensitive personal details unless asked
 
 The vault may sync to the user's phone, so the last item holds for every
-note in `AI/`. The lint warns on private IPv4 addresses and on long token-like runs.
+note in the area. The lint warns on private IPv4 addresses and on long token-like runs.
 
 ## Put it somewhere better first
 
@@ -162,7 +165,7 @@ it, so it has to be unique in the whole vault.
 - **`updated` moves only when the claim was re-checked.** It drives the review
   queue.
 
-Write the note in English. Every note in `AI/` passes
+Write the note in English. Every note in the area passes
 `markdownlint-cli2` under the vault's `.markdownlint-cli2.jsonc`, and the H1
 right after the frontmatter is what satisfies MD041. Links are bare wikilinks,
 the way `Vault.md` describes them.
@@ -229,7 +232,7 @@ the date and the version are what a review re-checks it against.
   sweep report reads it to count misses and reuse.
 - **Supersede in place.** A contradicting fact gets a new note that links the
   old one, and the old note turns `status: superseded` and moves to
-  `AI/archive/`. CLAUDE.md beats a memory.
+  `AREA/archive/`. CLAUDE.md beats a memory.
 - **Cap** what one domain can inject. When it's full, a new pinned note has to
   replace one. The lint warns once the pinned lines pass 4000 characters.
 - **Review** the active notes whose `updated` is older than 90 days, oldest
@@ -270,7 +273,7 @@ for the weekly review, and these steps wait until the user has confirmed it.
 3. Move it with Obsidian, which rewrites the links that point at it:
 
    ```bash
-   obsidian move path="AI/memory/FILENAME.md" to="AI/archive" < /dev/null
+   obsidian move path="AREA/memory/FILENAME.md" to="AREA/archive" < /dev/null
    ```
 
    The CLI exits 0 even when the move fails, so read its stdout for `Error:`.
@@ -278,7 +281,7 @@ for the weekly review, and these steps wait until the user has confirmed it.
 
 A note that nobody misses is archived without a successor, once the user has
 confirmed it: steps 2 and 3, `status: superseded`, then the move. Every note
-in `AI/archive/` is superseded, so none of them shows in the *Active* view.
+in `AREA/archive/` is superseded, so none of them shows in the *Active* view.
 
 ### Review a note
 
@@ -305,7 +308,7 @@ then that check's exit 0 gates every vault commit.
 
 **Commit.** When Values lists `vault.commit`, commit a memory note with that
 command and never with `git commit`, as `COMMAND MESSAGE PATH...`, naming
-each file (`COMMAND "docs(ai): add a memory" "AI/memory/FILE.md"`). Exit 0
+each file (`COMMAND "docs(ai): add a memory" "AREA/memory/FILE.md"`). Exit 0
 may mean the command queued the commit, and exit 1 means try again later.
 When `vault.commit` is not set, leave the note uncommitted and tell the user
 so.

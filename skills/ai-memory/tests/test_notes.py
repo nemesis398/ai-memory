@@ -9,10 +9,12 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from notes import (  # noqa: E402
-    ARCHIVE_DIR,
-    MEMORY_DIR,
-    SESSIONS_DIR,
+    BadArea,
     FrontmatterError,
+    area,
+    archive_dir,
+    memory_dir,
+    sessions_dir,
     load_domains,
     load_notes,
     line,
@@ -85,7 +87,7 @@ class LoadNotes(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.vault = Path(tmp.name)
-        self.memory = self.vault / MEMORY_DIR
+        self.memory = self.vault / "AI/memory"
 
     def test_a_note_carries_its_properties(self):
         write_note(self.memory, "ugrep-dies-on-long-patterns.md",
@@ -136,10 +138,10 @@ class LoadNotes(unittest.TestCase):
         self.assertGreater(n.size, len(n.path.read_text(encoding="utf-8")))
 
     def test_subfolders_are_read_and_a_missing_folder_is_empty(self):
-        write_note(self.vault / ARCHIVE_DIR / "2026", "old.md", front(status="superseded"))
-        notes, problems = load_notes(self.vault / ARCHIVE_DIR, self.vault)
+        write_note(self.vault / "AI/archive" / "2026", "old.md", front(status="superseded"))
+        notes, problems = load_notes(self.vault / "AI/archive", self.vault)
         self.assertEqual([n.rel for n in notes], ["AI/archive/2026/old.md"])
-        self.assertEqual(load_notes(self.vault / SESSIONS_DIR, self.vault), ([], []))
+        self.assertEqual(load_notes(self.vault / "AI/sessions", self.vault), ([], []))
 
     def test_line_is_title_and_description(self):
         write_note(self.memory, "a-b.md", front(description='"Says c."'))
@@ -208,3 +210,46 @@ class Environment(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Area(unittest.TestCase):
+    """`vault.area` places the memory, sessions and archive folders."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        self.vault = self.dir / "vault"
+
+    def env(self, area=None) -> dict:
+        data = {"vault": {"root": str(self.vault)}}
+        if area is not None:
+            data["vault"]["area"] = area
+        path = self.dir / "config.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return {"AI_MEMORY_CONFIG": str(path), "AI_MEMORY_VAULT": ""}
+
+    def test_area_default_is_ai(self):
+        with mock.patch.dict(os.environ, self.env()):
+            self.assertEqual(memory_dir(), self.vault / "AI/memory")
+            self.assertEqual(sessions_dir(), self.vault / "AI/sessions")
+            self.assertEqual(archive_dir(), self.vault / "AI/archive")
+
+    def test_area_empty_is_root(self):
+        for value in ("", "."):
+            with self.subTest(value=value), mock.patch.dict(os.environ, self.env(value)):
+                self.assertEqual(memory_dir(), self.vault / "memory")
+                self.assertEqual(archive_dir(), self.vault / "archive")
+
+    def test_area_trailing_slash(self):
+        with mock.patch.dict(os.environ, self.env("AI/")):
+            self.assertEqual(area(), area.__globals__["PurePosixPath"]("AI"))
+            self.assertEqual(memory_dir(), self.vault / "AI/memory")
+
+    def test_area_rejected(self):
+        for value in ("/abs", "../x", "a/../b", "a\\b", 5):
+            with self.subTest(value=value), mock.patch.dict(os.environ, self.env(value)):
+                with self.assertRaises(BadArea) as caught:
+                    memory_dir()
+                self.assertIn("`vault.area`", str(caught.exception))
+                self.assertIsInstance(caught.exception, ValueError)

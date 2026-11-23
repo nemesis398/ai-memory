@@ -1,4 +1,4 @@
-"""Read the memory and session notes in the vault's `AI/` area.
+"""Read the memory and session notes in the vault's area (`AI/` by default).
 
 The lint, the retrieval hooks and the sweep all read notes through this
 module, so a note means the same thing to each of them.
@@ -21,18 +21,17 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import skill_values as sv
 
 VAULT_KEY = "vault.root"
+AREA_KEY = "vault.area"
 DOMAINS_KEY = "memory.domains"
+DEFAULT_AREA = "AI"
 
 KINDS = ("gotcha", "feedback", "preference", "reference")
 PINNED = "pinned"
-MEMORY_DIR = "AI/memory"
-SESSIONS_DIR = "AI/sessions"
-ARCHIVE_DIR = "AI/archive"
 
 
 class FrontmatterError(ValueError):
@@ -247,6 +246,57 @@ def vault_root() -> Path:
     Raises skill_values.Missing without both."""
     named = os.environ.get("AI_MEMORY_VAULT")
     return Path(named or sv.require(VAULT_KEY)).expanduser()
+
+
+class BadArea(ValueError, LookupError):
+    """`vault.area` is not a relative path inside the vault. A LookupError
+    too, so a hook or script reports it like a key that is not set."""
+
+
+def area(values: dict | None = None) -> PurePosixPath:
+    """The folder of the notes inside the vault: `vault.area`, default `AI`.
+
+    `""` and `.` mean the vault root. A trailing slash is dropped. An absolute
+    path, `..` or a backslash raises BadArea naming the key."""
+    node = sv.load() if values is None else values
+    for part in AREA_KEY.split("."):
+        node = node.get(part) if isinstance(node, dict) else None
+    if node is None:
+        return PurePosixPath(DEFAULT_AREA)
+    problem = None
+    if not isinstance(node, str):
+        problem = "must be a string"
+    elif "\\" in node:
+        problem = "must not hold a backslash"
+    elif PurePosixPath(node.strip()).is_absolute():
+        problem = "must be a relative path, not an absolute one"
+    elif ".." in PurePosixPath(node.strip()).parts:
+        problem = "must not hold .."
+    if problem:
+        raise BadArea(f"`{AREA_KEY}` in `{sv.path()}` {problem}: {node!r}. "
+                      "Use a path inside the vault such as AI, or \"\" for the vault root")
+    return PurePosixPath(node.strip())
+
+
+def rel_dir(name: str) -> str:
+    """`memory`, `sessions` or `archive` as a path relative to the vault."""
+    return (area() / name).as_posix()
+
+
+def _dir(name: str, vault: Path | None) -> Path:
+    return (vault if vault is not None else vault_root()) / area() / name
+
+
+def memory_dir(vault: Path | None = None) -> Path:
+    return _dir("memory", vault)
+
+
+def sessions_dir(vault: Path | None = None) -> Path:
+    return _dir("sessions", vault)
+
+
+def archive_dir(vault: Path | None = None) -> Path:
+    return _dir("archive", vault)
 
 
 def load_domains() -> dict[str, list[str]]:

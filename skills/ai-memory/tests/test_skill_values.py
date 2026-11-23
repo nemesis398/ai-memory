@@ -152,33 +152,44 @@ class Render(unittest.TestCase):
 
     def test_the_text_keys(self):
         self.assertEqual(sv.TEXT_KEYS, [("user.name", str), ("vault.root", str),
-                                        ("vault.commit", str)])
+                                        ("vault.commit", str), ("vault.area", str)])
 
     def test_a_full_file(self):
         self.file.write_text(json.dumps(FULL), encoding="utf-8")
         self.assertEqual(self.render(), ["## Values", "", "- `user.name`: Alice",
                                          "- `vault.root`: /notes",
-                                         "- `vault.commit`: vault-commit"])
+                                         "- `vault.commit`: vault-commit", "- `vault.area`: AI"])
 
     def test_a_missing_key(self):
         self.file.write_text(json.dumps({"user": {"name": "Alice"},
                                          "vault": {"commit": "vault-commit"}}), encoding="utf-8")
         self.assertEqual(self.render(), ["## Values", "", "- `user.name`: Alice",
                                          self.stop("vault.root"),
-                                         "- `vault.commit`: vault-commit"])
+                                         "- `vault.commit`: vault-commit", "- `vault.area`: AI"])
 
     def test_a_mistyped_key_is_missing(self):
         self.file.write_text(json.dumps({**FULL, "vault": {"root": ["/notes"]}}), encoding="utf-8")
         self.assertEqual(self.render()[3], self.stop("vault.root"))
 
+    def test_render_names_area(self):
+        for value, shown in (("Notes/", "Notes"), ("", "."), (None, "AI")):
+            with self.subTest(value=value):
+                vault = {"root": "/notes", **({} if value is None else {"area": value})}
+                self.file.write_text(json.dumps({"vault": vault}), encoding="utf-8")
+                self.assertEqual(self.render()[-1], f"- `vault.area`: {shown}")
+
+    def test_render_reports_a_bad_area(self):
+        self.file.write_text(json.dumps({"vault": {"root": "/n", "area": "../x"}}), encoding="utf-8")
+        self.assertIn("- `vault.area`: invalid: `vault.area`", self.render()[-1])
+
     def test_the_name_never_stops_the_skill(self):
-        self.assertEqual(sv.OPTIONAL, {"user.name"})
+        self.assertEqual(sv.OPTIONAL - set(sv.SHOWN), {"user.name"})
         for name in (None, "", ["Alice"]):
             with self.subTest(name=name):
                 user = {} if name is None else {"name": name}
                 self.file.write_text(json.dumps({**FULL, "user": user}), encoding="utf-8")
                 self.assertEqual(self.render(), ["## Values", "", "- `vault.root`: /notes",
-                                                 "- `vault.commit`: vault-commit"])
+                                                 "- `vault.commit`: vault-commit", "- `vault.area`: AI"])
 
     def test_commit_off_means_uncommitted_never_git_commit(self):
         step = sv.STEPS["vault.commit"]
@@ -190,11 +201,11 @@ class Render(unittest.TestCase):
         self.file.write_text(json.dumps({"user": {"name": "Alice"},
                                          "vault": {"root": "/notes"}}), encoding="utf-8")
         self.assertEqual(self.render(), ["## Values", "", "- `user.name`: Alice",
-                                         "- `vault.root`: /notes", self.commit_off()])
+                                         "- `vault.root`: /notes", self.commit_off(), "- `vault.area`: AI"])
 
     def assertAllMissing(self) -> None:
         self.assertEqual(self.render(), ["## Values", "", self.stop("vault.root"),
-                                         self.commit_off()])
+                                         self.commit_off(), "- `vault.area`: AI"])
 
     def test_a_missing_file(self):
         self.assertAllMissing()

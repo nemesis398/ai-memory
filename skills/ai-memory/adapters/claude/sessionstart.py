@@ -35,10 +35,11 @@ def handle(payload: dict) -> dict | None:
         state.forget(session)
     try:
         vault = notes.vault_root()
-    except LookupError as exc:  # vault.root is not set: the skill is off
+        memory = notes.memory_dir(vault)
+    except LookupError as exc:  # vault.root is not set or vault.area is bad: the skill is off
         _common.not_set(exc)
         return None
-    found, problems = notes.load_notes(vault / notes.MEMORY_DIR, vault)
+    found, problems = notes.load_notes(memory, vault)
     _common.log_problems(problems)
     given = set(state.seen(session)["injected"])
     fresh = [note for note in retrieve.pinned(found) if note.rel not in given]

@@ -4,6 +4,7 @@
   },
   "vault": {
     "root": "/home/alice/Notes",
+    "area": "AI",
     "commit": "git-commit-note"
   },
   "memory": {

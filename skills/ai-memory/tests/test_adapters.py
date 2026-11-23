@@ -582,3 +582,31 @@ class MistypedDomains(AdapterCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RootAreaTest(AdapterCase):
+    def config(self, vault: Path, area) -> Path:
+        path = self.tmp / "config.json"
+        path.write_text(json.dumps({"vault": {"root": str(vault), "area": area}}),
+                        encoding="utf-8")
+        return path
+
+    def test_hooks_inject_from_root_area(self):
+        vault = self.tmp / "vault"
+        write_note(vault / "memory", "root-note.md",
+                   front(tags="[reference, pinned]", description='"Lives at the root."'))
+        context = self.context(START, start(), AI_MEMORY_VAULT="",
+                               AI_MEMORY_CONFIG=str(self.config(vault, "")))
+        self.assertIn("- root-note: Lives at the root.", context)
+        self.assertIn(str(vault / "memory"), context.replace("~", str(Path.home())))
+
+    def test_a_bad_area_is_one_stderr_line(self):
+        config = self.config(self.tmp / "vault", "../x")
+        for script, payload in ((START, start()), (PROMPT, prompt("docker")),
+                                (FAILURE, failure("Exit code 144"))):
+            with self.subTest(script=script):
+                done = self.drive(script, payload, AI_MEMORY_VAULT="",
+                                  AI_MEMORY_CONFIG=str(config))
+                self.assertEqual((done.returncode, done.stdout), (0, ""))
+                self.assertTrue(done.stderr.startswith("ai-memory: `vault.area` in"))
+                self.assertEqual(done.stderr.count("\n"), 1)

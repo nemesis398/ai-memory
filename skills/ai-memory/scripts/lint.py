@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Lint the vault's `AI/` area: memory notes, archived notes and session notes.
+"""Lint the vault's area (`AI/` by default): memory notes, archived notes and session notes.
 
     lint.py [--vault PATH] [--summary]
 
 Prints one `LEVEL rel: message` line per finding and exits 1 on any ERROR,
 else 0, so a caller such as vault-check can count the lines by their prefix.
 
-AI/memory and AI/archive answer for every memory rule. AI/sessions answers
+The memory and archive folders answer for every memory rule. The sessions folder answers
 only for what a session note has: flat frontmatter, `type: session`, a
 description, an `updated` date and known domains. Session notes carry no
 status, no tags and no size cap. The secrets heuristic and markdownlint-cli2
@@ -25,15 +25,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from notes import (
-    ARCHIVE_DIR,
     KINDS,
-    MEMORY_DIR,
     PINNED,
-    SESSIONS_DIR,
     Note,
     line,
     load_domains,
     load_notes,
+    rel_dir,
     vault_root,
 )
 from retrieve import PINNED_BUDGET, SYMPTOM_MIN, symptoms
@@ -46,13 +44,22 @@ STATUSES = ("active", "superseded")
 # The binary is the one AI_MEMORY_MDLINT names, else this name on the PATH.
 MDLINT_NAME = "markdownlint-cli2"
 MDLINT_TIMEOUT = 120
-FOLDERS = (MEMORY_DIR, SESSIONS_DIR, ARCHIVE_DIR)
-# Globs, never file names: markdownlint-cli2 reads every argument as a glob,
-# and a parenthesis in a session title would break a file name.
-MDLINT_GLOBS = tuple(f"{folder}/**/*.md" for folder in FOLDERS)
+
+
+def _folders() -> tuple[str, str, str]:
+    """The memory, sessions and archive folders, relative to the vault."""
+    return rel_dir("memory"), rel_dir("sessions"), rel_dir("archive")
+
+
+def _globs() -> tuple[str, ...]:
+    # Globs, never file names: markdownlint-cli2 reads every argument as a glob,
+    # and a parenthesis in a session title would break a file name.
+    return tuple(f"{folder}/**/*.md" for folder in _folders())
+
+
 # What markdownlint-cli2 v0.23.3 prints to stderr for each finding, with the
 # path relative to its working directory:
-#   AI/memory/x.md:5:81 error MD013/line-length Line length [...]
+#   <area>/memory/x.md:5:81 error MD013/line-length Line length [...]
 # The column and the severity are optional. The banner goes to stdout.
 _MDLINT_LINE = re.compile(
     r"(?P<rel>.+?\.md):(?P<line>\d+)(?::(?P<column>\d+))?"
@@ -76,20 +83,21 @@ def lint_vault(vault: Path, domains: dict[str, list[str]]) -> list[Finding]:
     """Every finding for the area, grouped by note, ERRORs first."""
     findings: list[Finding] = []
     pinned: list[Note] = []
-    for folder in FOLDERS:
+    memory_rel, sessions_rel, archive_rel = _folders()
+    for folder in _folders():
         notes, problems = load_notes(vault / folder, vault)
         findings += [Finding("ERROR", rel, message) for rel, message in problems]
         for note in notes:
-            if folder == SESSIONS_DIR:
+            if folder == sessions_rel:
                 findings += _session_findings(note, domains)
             else:
-                findings += _memory_findings(note, folder, domains)
+                findings += _memory_findings(note, folder, domains, archive_rel)
                 if _is_pinned(note):
                     pinned.append(note)
             findings += _secret_findings(note)
     pinned_chars = _block_chars(pinned)
     if pinned_chars > PINNED_BUDGET:
-        findings.append(Finding("WARN", MEMORY_DIR,
+        findings.append(Finding("WARN", memory_rel,
                                 f"the pinned lines take {pinned_chars} characters, "
                                 f"over the {PINNED_BUDGET} budget"))
     findings += markdown_findings(vault)
@@ -134,14 +142,15 @@ def _session_findings(note: Note, domains: dict[str, list[str]]) -> list[Finding
     return _type_finding(note, "session") + _shared_findings(note, domains)
 
 
-def _memory_findings(note: Note, folder: str, domains: dict[str, list[str]]) -> list[Finding]:
+def _memory_findings(note: Note, folder: str, domains: dict[str, list[str]],
+                     archive_rel: str) -> list[Finding]:
     out = _type_finding(note, "memory") + _shared_findings(note, domains)
     if note.status not in STATUSES:
         out.append(Finding("ERROR", note.rel,
                            f"status is {_shown(note, 'status')}, must be active or superseded"))
-    elif note.status == "superseded" and folder != ARCHIVE_DIR:
+    elif note.status == "superseded" and folder != archive_rel:
         out.append(Finding("WARN", note.rel,
-                           f"superseded but still here: move it to {ARCHIVE_DIR}"))
+                           f"superseded but still here: move it to {archive_rel}"))
     kinds = [tag for tag in note.tags if tag in KINDS]
     if len(kinds) != 1:
         has = ", ".join(kinds) or "none"
@@ -205,7 +214,7 @@ def markdown_findings(vault: Path) -> list[Finding]:
     since the notes then went unchecked rather than failed. A run that ends
     in an error of its own, such as a broken config, is one ERROR.
     """
-    if not any((vault / folder).is_dir() for folder in FOLDERS):
+    if not any((vault / folder).is_dir() for folder in _folders()):
         return []
     tool = MDLINT_NAME
     named = os.environ.get("AI_MEMORY_MDLINT")
@@ -214,7 +223,7 @@ def markdown_findings(vault: Path) -> list[Finding]:
         return [Finding("WARN", tool, f"not on the PATH and AI_MEMORY_MDLINT is not set, "
                                       f"so the Markdown went unchecked")]
     try:
-        done = subprocess.run([binary, *MDLINT_GLOBS], cwd=vault, capture_output=True,
+        done = subprocess.run([binary, *_globs()], cwd=vault, capture_output=True,
                               text=True, encoding="utf-8", errors="replace",
                               timeout=MDLINT_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -242,22 +251,23 @@ def _plural(count: int, word: str) -> str:
 
 def _summary(vault: Path) -> list[str]:
     """Counts for the telemetry report: notes and bytes per folder, kinds in
-    AI/memory and the pinned characters against their budget."""
+    the memory folder and the pinned characters against their budget."""
     out = []
+    memory_rel, sessions_rel, _ = _folders()
     pinned: list[Note] = []
     kinds = dict.fromkeys(KINDS, 0)
-    for folder in FOLDERS:
+    for folder in _folders():
         notes, _ = load_notes(vault / folder, vault)
         out.append(f"{folder}: {_plural(len(notes), 'note')}, "
                    f"{sum(n.size for n in notes)} bytes")
         for note in notes:
-            if folder == MEMORY_DIR:
+            if folder == memory_rel:
                 for tag in note.tags:
                     if tag in kinds:
                         kinds[tag] += 1
-            if folder != SESSIONS_DIR and _is_pinned(note):
+            if folder != sessions_rel and _is_pinned(note):
                 pinned.append(note)
-    out.append("kinds in AI/memory: " + ", ".join(f"{k} {n}" for k, n in kinds.items()))
+    out.append(f"kinds in {memory_rel}: " + ", ".join(f"{k} {n}" for k, n in kinds.items()))
     out.append(f"pinned: {_plural(len(pinned), 'note')}, "
                f"{_block_chars(pinned)} of {PINNED_BUDGET} characters")
     return out
@@ -283,7 +293,11 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         domains = {}
         findings.append(Finding("ERROR", "memory.domains", str(exc)))
-    findings += lint_vault(vault, domains)
+    try:
+        findings += lint_vault(vault, domains)
+    except LookupError as exc:  # a bad vault.area
+        print(f"{Path(sys.argv[0]).name}: {exc}", file=sys.stderr)
+        return 2
     for finding in findings:
         print(f"{finding.level} {finding.rel}: {finding.message}")
     if args.summary:

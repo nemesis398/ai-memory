@@ -57,6 +57,7 @@ in the file `AI_MEMORY_CONFIG` names. `config.example.json` shows the shape.
 | --- | --- | --- |
 | `user.name` | string | how the skill names the user; optional, never stops the skill |
 | `vault.root` | string, an absolute path | the vault; `AI_MEMORY_VAULT` wins over it |
+| `vault.area` | string, a relative path, default `AI` | the folder in the vault that holds `memory/`, `sessions/` and `archive/`; `""` or `.` means the vault root. An absolute path, `..` or a backslash is an error that names the key |
 | `vault.commit` | string, a command | what commits a note, run as `COMMAND MESSAGE PATH...`; the skill then never runs `git commit`. Without it the commit step is off: the note stays uncommitted and the skill says so |
 | `memory.domains` | object, a list of keywords per domain | the domain vocabulary; without it the lint checks no domain and no digest is injected, and a mistyped one is a lint ERROR and one stderr line from the prompt hook, which still injects the symptom matches. `AI_MEMORY_DOMAINS` may name a JSON file instead |
 
@@ -68,8 +69,9 @@ says it on one stderr line.
 
 ## The vault
 
-The notes sit in fixed places of the vault: `AI/memory/`, `AI/archive/` and
-`AI/sessions/`. The skill expects the vault to provide:
+The notes sit in `memory/`, `archive/` and `sessions/` under `vault.area`,
+`AI` by default. This section writes `AI/` for that folder. The skill
+expects the vault to provide:
 
 - the Obsidian command line, `obsidian`, with the app running: a superseded
   note moves to `AI/archive/` with `obsidian move`, because only Obsidian

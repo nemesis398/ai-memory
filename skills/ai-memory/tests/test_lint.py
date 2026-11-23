@@ -20,7 +20,7 @@ from lint import (  # noqa: E402
     lint_vault,
     markdown_findings,
 )
-from notes import ARCHIVE_DIR, MEMORY_DIR, SESSIONS_DIR  # noqa: E402
+from helpers import ARCHIVE_DIR, MEMORY_DIR, SESSIONS_DIR  # noqa: E402
 
 # The binary the lint itself would run, read before any test stubs it.
 REAL_MDLINT = os.environ.get("AI_MEMORY_MDLINT") or shutil.which(MDLINT_NAME)
@@ -400,3 +400,19 @@ class Cli(LintCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RootArea(unittest.TestCase):
+    def test_the_lint_reads_the_folders_under_vault_area(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vault = Path(tmp) / "vault"
+            config = Path(tmp) / "config.json"
+            config.write_text('{"vault": {"area": ""}}', encoding="utf-8")
+            write_note(vault / "archive", "old.md", front(status="superseded"))
+            write_note(vault / "memory", "bad.md", front(status="superseded"))
+            with mock.patch.dict(os.environ, {"AI_MEMORY_CONFIG": str(config),
+                                              "AI_MEMORY_MDLINT": "/nonexistent"}):
+                found = [(f.rel, f.message) for f in lint_vault(vault, {})]
+        self.assertIn(("memory/bad.md", "superseded but still here: move it to archive"), found)
+        self.assertFalse([rel for rel, _ in found if rel == "archive/old.md"
+                          and "superseded" in _])

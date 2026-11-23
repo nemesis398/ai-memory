@@ -51,7 +51,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from notes import ARCHIVE_DIR, MEMORY_DIR, SESSIONS_DIR, Note, load_notes, vault_root
+from notes import Note, archive_dir, load_notes, memory_dir, rel_dir, sessions_dir, vault_root
 from state import LOG_FILE, REASONS, state_root
 
 REVIEW_DAYS = 90
@@ -232,7 +232,7 @@ def _archive_lines(sessions: list[Note], since: date, memories: list[Note],
                    archived: list[Note]) -> list[str]:
     # Obsidian resolves a link by filename, case aside.
     by_name: dict[str, tuple[str, Note]] = {}
-    for where, group in ((ARCHIVE_DIR, archived), (MEMORY_DIR, memories)):
+    for where, group in ((rel_dir("archive"), archived), (rel_dir("memory"), memories)):
         for note in group:
             by_name[note.title.casefold()] = (where, note)
     lines = []
@@ -251,13 +251,13 @@ def _archive_lines(sessions: list[Note], since: date, memories: list[Note],
             where, target = by_name.get(name.casefold(), ("", None))
             if target is None:
                 verdict = "no memory note by that name | archive not recommended"
-            elif where == ARCHIVE_DIR:
-                verdict = f"already archived in {ARCHIVE_DIR} | archive not recommended"
+            elif where == rel_dir("archive"):
+                verdict = f"already archived in {rel_dir("archive")} | archive not recommended"
             elif target.status != "active":
                 verdict = (f"its status is {target.status or 'missing'}, not active"
                            " | archive not recommended")
             else:
-                verdict = f"the note is active in {MEMORY_DIR} | archive recommended"
+                verdict = f"the note is active in {rel_dir("memory")} | archive recommended"
             why = proposal["why"] or "no reason given"
             lines.append(f"- {name} | {why} | {note.title} | {verdict}")
     return lines or [f"None: no session note updated since {since} proposes an archival."]
@@ -341,13 +341,13 @@ def _readable(notes: list[Note]) -> tuple[list[Note], int]:
 
 def report(vault: Path, since: date, log: Path) -> tuple[str, list[str]]:
     """The report's text, and the problems for the one stderr line."""
-    sessions, problems = load_notes(vault / SESSIONS_DIR, vault)
+    sessions, problems = load_notes(sessions_dir(vault), vault)
     sessions, undated = _readable(sessions)
     skipped_notes = len(problems) + undated
-    memories, problems = load_notes(vault / MEMORY_DIR, vault)
+    memories, problems = load_notes(memory_dir(vault), vault)
     active, undated = _readable([note for note in memories if note.status == "active"])
     skipped_notes += len(problems) + undated
-    archived, problems = load_notes(vault / ARCHIVE_DIR, vault)
+    archived, problems = load_notes(archive_dir(vault), vault)
     skipped_notes += len(problems)
     entries, skipped_lines, error = read_log(log)
 
@@ -405,7 +405,11 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if not vault.is_dir():
         command.error(f"no vault at {vault}")
-    text, problems = report(vault, args.since, state_root() / LOG_FILE)
+    try:
+        text, problems = report(vault, args.since, state_root() / LOG_FILE)
+    except LookupError as exc:  # a bad vault.area
+        print(f"{Path(sys.argv[0]).name}: {exc}", file=sys.stderr)
+        return 2
     print(text)
     if problems:
         print(f"sweep.py: {'; '.join(problems)}", file=sys.stderr)

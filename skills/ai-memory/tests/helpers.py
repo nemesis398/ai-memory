@@ -5,7 +5,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from notes import MEMORY_DIR, Note, parse_frontmatter  # noqa: E402
+from notes import Note, parse_frontmatter  # noqa: E402
+
+MEMORY_DIR = "AI/memory"
+SESSIONS_DIR = "AI/sessions"
+ARCHIVE_DIR = "AI/archive"
 
 # A memory note that every lint rule accepts. Each test changes one key.
 CLEAN_MEMORY = {
