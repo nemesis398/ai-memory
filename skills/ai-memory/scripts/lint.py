@@ -83,8 +83,8 @@ def lint_vault(vault: Path, domains: dict[str, list[str]]) -> list[Finding]:
     """Every finding for the area, grouped by note, ERRORs first."""
     findings: list[Finding] = []
     pinned: list[Note] = []
-    memory_rel, sessions_rel, archive_rel = _folders()
-    for folder in _folders():
+    folders = memory_rel, sessions_rel, archive_rel = _folders()
+    for folder in folders:
         notes, problems = load_notes(vault / folder, vault)
         findings += [Finding("ERROR", rel, message) for rel, message in problems]
         for note in notes:
@@ -253,10 +253,10 @@ def _summary(vault: Path) -> list[str]:
     """Counts for the telemetry report: notes and bytes per folder, kinds in
     the memory folder and the pinned characters against their budget."""
     out = []
-    memory_rel, sessions_rel, _ = _folders()
+    folders = memory_rel, sessions_rel, _ = _folders()
     pinned: list[Note] = []
     kinds = dict.fromkeys(KINDS, 0)
-    for folder in _folders():
+    for folder in folders:
         notes, _ = load_notes(vault / folder, vault)
         out.append(f"{folder}: {_plural(len(notes), 'note')}, "
                    f"{sum(n.size for n in notes)} bytes")

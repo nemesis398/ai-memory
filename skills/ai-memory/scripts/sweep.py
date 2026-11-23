@@ -232,7 +232,8 @@ def _archive_lines(sessions: list[Note], since: date, memories: list[Note],
                    archived: list[Note]) -> list[str]:
     # Obsidian resolves a link by filename, case aside.
     by_name: dict[str, tuple[str, Note]] = {}
-    for where, group in ((rel_dir("archive"), archived), (rel_dir("memory"), memories)):
+    archive_rel, memory_rel = rel_dir("archive"), rel_dir("memory")
+    for where, group in ((archive_rel, archived), (memory_rel, memories)):
         for note in group:
             by_name[note.title.casefold()] = (where, note)
     lines = []
@@ -251,13 +252,13 @@ def _archive_lines(sessions: list[Note], since: date, memories: list[Note],
             where, target = by_name.get(name.casefold(), ("", None))
             if target is None:
                 verdict = "no memory note by that name | archive not recommended"
-            elif where == rel_dir("archive"):
-                verdict = f"already archived in {rel_dir("archive")} | archive not recommended"
+            elif where == archive_rel:
+                verdict = f"already archived in {archive_rel} | archive not recommended"
             elif target.status != "active":
                 verdict = (f"its status is {target.status or 'missing'}, not active"
                            " | archive not recommended")
             else:
-                verdict = f"the note is active in {rel_dir("memory")} | archive recommended"
+                verdict = f"the note is active in {memory_rel} | archive recommended"
             why = proposal["why"] or "no reason given"
             lines.append(f"- {name} | {why} | {note.title} | {verdict}")
     return lines or [f"None: no session note updated since {since} proposes an archival."]
