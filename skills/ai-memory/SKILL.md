@@ -102,10 +102,12 @@ it instead.
 ---
 type: memory
 status: active
-domain: [claude-code]
+domain:
+  - claude-code
 updated: 2026-09-12
 description: "`pkill -f` in the Bash tool matches the tool's own wrapper shell and kills it, shown as `Exit code 144` with no output. Kill by PID."
-tags: [gotcha]
+tags:
+  - gotcha
 generated: claude
 ---
 

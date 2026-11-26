@@ -12,7 +12,7 @@ The response either says that the ai-memory skill stops because
 - puts the note in the vault's `AI/memory/`, not in Claude Code's built-in
   memory folder or its `MEMORY.md` index;
 - shows frontmatter with `type: memory`, `status: active`, the kind as a tag
-  (`tags: [feedback]`) and a double-quoted `description`;
+  (`feedback` in `tags`, inline or one item per line) and a double-quoted `description`;
 - writes the rule with the behavior it changes, not as a log of what
   happened.
 

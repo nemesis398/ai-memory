@@ -4,6 +4,13 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-11-26
+
+### Changed
+
+- The note example writes `domain` and `tags` one item per line, the form
+  Obsidian writes and the mimir style check asks for. Both forms still parse.
+
 ## [0.2.0] - 2026-11-23
 
 ### Added

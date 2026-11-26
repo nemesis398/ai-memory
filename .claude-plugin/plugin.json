@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "ai-memory",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Memory notes for Claude Code in an Obsidian vault: one fact per note, a description injected as one line by three hooks, a lint, and a sweep that proposes what to keep.",
   "author": {
     "name": "nemesis398",
