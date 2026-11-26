@@ -3,5 +3,8 @@ config:
   MD013: false
   # The eval prompts start with front matter and a sentence, not a heading.
   MD041: false
+  # Keep a Changelog repeats Added and Changed under each version.
+  MD024:
+    siblings_only: true
 ignores:
   - "evals/results/**"
